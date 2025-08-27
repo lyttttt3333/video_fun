@@ -684,12 +684,13 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 timestep = t.expand(latent_model_input.shape[0])
                 
                 # predict noise model_output
+                # 2， 16， 21， 60， 104
                 print("latent_model_input shape:", latent_model_input.shape)
-                print("in_prompt_embeds shape:", in_prompt_embeds.shape)
+                print("in_prompt_embeds shape:", len(in_prompt_embeds),in_prompt_embeds[0].shape)
                 print("timestep shape:", timestep.shape if hasattr(timestep, "shape") else timestep)
                 print("seq_len:", seq_len)
                 print("y shape:", y.shape if hasattr(y, "shape") else y)
-                print("clip_context_input shape:", clip_context_input.shape)
+                print("clip_context_input shape:", clip_context_input[0].shape)
 
                 with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
                     noise_pred = self.transformer(
