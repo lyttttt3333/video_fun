@@ -105,11 +105,11 @@ fps                 = 16
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype            = torch.bfloat16
 # If you want to generate from text, please set the validation_image_start = None and validation_image_end = None
-validation_image_start  = "asset/1.png"
+validation_image_start  = "asset/test_3.png"
 validation_image_end    = None
 
 # prompts
-prompt              = "一只棕色的狗摇着头，坐在舒适房间里的浅色沙发上。在狗的后面，架子上有一幅镶框的画，周围是粉红色的花朵。房间里柔和温暖的灯光营造出舒适的氛围。"
+prompt              = "The aerial perspective begins with a sweeping overhead view of a city, showcasing a dense cluster of orange-tiled rooftops on a cloudy day. A narrow canal, dotted with numerous parked boats, winds through the city on the right, with a prominent white bell tower visible in the far distance. As the viewpoint gracefully glides forward and slightly descends, the camera moves directly over the terracotta-colored buildings, revealing more of their intricate rooftop patterns and the occasional inner courtyard. Trees and smaller green spaces appear within the courtyards as the perspective shifts further inland from the canal, which eventually moves out of frame. The continuous forward motion emphasizes the close-knit urban fabric of the city under a diffused sky."
 negative_prompt     = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
 guidance_scale      = 6.0
 seed                = 43
