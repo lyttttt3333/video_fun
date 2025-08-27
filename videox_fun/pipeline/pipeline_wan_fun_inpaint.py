@@ -693,6 +693,8 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 # # len 2 [257, 1280]
                 # print("clip_context_input shape:", clip_context_input[0].shape)
 
+                print("############## clip context", torch.allclose(y[0], y[1], atol=1e-4))
+
                 with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
                     input_latent = latent_model_input
                     # tensor [1, 16, 21, 60, 104]
