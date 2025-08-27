@@ -681,58 +681,58 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0])
                 
-                # # predict noise model_output
-                # # 2， 16， 21， 60， 104
-                # print("latent_model_input shape:", latent_model_input.shape)
-                # # len 2 [126, 4096]
-                # print("in_prompt_embeds shape:", len(in_prompt_embeds),in_prompt_embeds[0].shape)
-                # # [2]
-                # print("seq_len:", seq_len)
-                # # [2, 20, 21, 60, 104]
-                # print("y shape:", y.shape if hasattr(y, "shape") else y)
-                # # len 2 [257, 1280]
-                # print("clip_context_input shape:", clip_context_input[0].shape)
+                # predict noise model_output
+                # 2， 16， 21， 60， 104
+                print("latent_model_input shape:", latent_model_input.shape)
+                # len 2 [126, 4096]
+                print("in_prompt_embeds shape:", len(in_prompt_embeds),in_prompt_embeds[0].shape)
+                # [2]
+                print("seq_len:", seq_len)
+                # [2, 20, 21, 60, 104]
+                print("y shape:", y.shape if hasattr(y, "shape") else y)
+                # len 2 [257, 1280]
+                print("clip_context_input shape:", clip_context_input[0].shape)
 
-                print("############## clip context", torch.allclose(y[0], y[1], atol=1e-4))
+                # print("############## clip context", torch.allclose(y[0], y[1], atol=1e-4))
 
-                with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
-                    input_latent = latent_model_input
-                    # tensor [1, 16, 21, 60, 104]
-                    uncond_prompt = [in_prompt_embeds[0]]
-                    # list [126, 4096]
-                    cond_prompt = [in_prompt_embeds[1]]
-                    # list [126, 4096]
-                    uncond_y = y[0].unsqueeze(0)
-                    # [1, 20, 21, 60, 104]
-                    cond_y = y[1].unsqueeze(0)
-                    # [1, 20, 21, 60, 104]
-                    clip_context = clip_context_fake
-                    # list [257, 1280]
+                # with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
+                #     input_latent = latent_model_input
+                #     # tensor [1, 16, 21, 60, 104]
+                #     uncond_prompt = [in_prompt_embeds[0]]
+                #     # list [126, 4096]
+                #     cond_prompt = [in_prompt_embeds[1]]
+                #     # list [126, 4096]
+                #     uncond_y = y[0].unsqueeze(0)
+                #     # [1, 20, 21, 60, 104]
+                #     cond_y = y[1].unsqueeze(0)
+                #     # [1, 20, 21, 60, 104]
+                #     clip_context = clip_context_fake
+                #     # list [257, 1280]
 
-                    noise_pred_uncond = self.transformer(
-                        x=input_latent,
-                        context=uncond_prompt,
-                        t=t.view(-1),
-                        seq_len=seq_len,
-                        y=uncond_y,
-                        clip_fea=clip_context,
-                    )
-                    noise_pred_cond = self.transformer(
-                        x=input_latent,
-                        context=cond_prompt,
-                        t=t.view(-1),
-                        seq_len=seq_len,
-                        y=cond_y,
-                        clip_fea=clip_context,
-                    )
+                #     noise_pred_uncond = self.transformer(
+                #         x=input_latent,
+                #         context=uncond_prompt,
+                #         t=t.view(-1),
+                #         seq_len=seq_len,
+                #         y=uncond_y,
+                #         clip_fea=clip_context,
+                #     )
+                #     noise_pred_cond = self.transformer(
+                #         x=input_latent,
+                #         context=cond_prompt,
+                #         t=t.view(-1),
+                #         seq_len=seq_len,
+                #         y=cond_y,
+                #         clip_fea=clip_context,
+                #     )
                 # [2, 16, 21, 60, 104] 6.0
                 # print("############### noise_pred shape:", noise_pred_cond.shape, self.guidance_scale)
 
                 # perform guidance
-                if do_classifier_free_guidance:
-                    # noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                    noise_pred_fake = noise_pred_uncond + self.guidance_scale * (noise_pred_cond - noise_pred_uncond)
-                # [1, 16, 21, 60, 104]
+                # if do_classifier_free_guidance:
+                #     # noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                #     noise_pred_fake = noise_pred_uncond + self.guidance_scale * (noise_pred_cond - noise_pred_uncond)
+                # # [1, 16, 21, 60, 104]
 
                 with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
                     noise_pred = self.transformer(
