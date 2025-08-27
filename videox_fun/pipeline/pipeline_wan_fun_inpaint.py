@@ -690,6 +690,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 # [2, 20, 21, 60, 104]
                 print("y shape:", y.shape if hasattr(y, "shape") else y)
                 torch.save(y.clone().cpu(), "y.pt")
+                assert 0
                 # len 2 [257, 1280]
                 print("clip_context_input shape:", clip_context_input[0].shape)
 
