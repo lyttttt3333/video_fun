@@ -105,7 +105,7 @@ fps                 = 16
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype            = torch.bfloat16
 # If you want to generate from text, please set the validation_image_start = None and validation_image_end = None
-validation_image_start  = "asset/test_3.png"
+validation_image_start  = "asset/test_2.png"
 validation_image_end    = None
 
 # prompts
