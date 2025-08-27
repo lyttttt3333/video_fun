@@ -105,11 +105,11 @@ fps                 = 16
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype            = torch.bfloat16
 # If you want to generate from text, please set the validation_image_start = None and validation_image_end = None
-validation_image_start  = "asset/test_2.png"
+validation_image_start  = "asset/test_1.png"
 validation_image_end    = None
 
 # prompts
-prompt              = "The aerial perspective begins with a sweeping overhead view of a city, showcasing a dense cluster of orange-tiled rooftops on a cloudy day. A narrow canal, dotted with numerous parked boats, winds through the city on the right, with a prominent white bell tower visible in the far distance. As the viewpoint gracefully glides forward and slightly descends, the camera moves directly over the terracotta-colored buildings, revealing more of their intricate rooftop patterns and the occasional inner courtyard. Trees and smaller green spaces appear within the courtyards as the perspective shifts further inland from the canal, which eventually moves out of frame. The continuous forward motion emphasizes the close-knit urban fabric of the city under a diffused sky."
+prompt              = "The aerial perspective begins with a downward view, showcasing the powerful waves crashing against the base of a towering, dark, columnar cliff. As the viewpoint ascends and slowly tilts upwards, the immense height and rugged texture of the cliff face are revealed, along with a distant reddish-brown transmission tower perched at the cliff's summit. The camera continues its upward and slightly leftward movement, transitioning to an overhead view of the cliff's expansive, flat top, which is covered in lush green vegetation and traversed by a winding dirt path and a paved road with a few parked cars. Finally, the aerial perspective smoothly pans further left and rises, offering a sweeping view of the verdant cliff top extending out to a rocky headland, with the vast, light-colored ocean stretching to the horizon, its waves continuously breaking against the dark, jagged coastline under an overcast sky."
 negative_prompt     = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
 guidance_scale      = 6.0
 seed                = 43
