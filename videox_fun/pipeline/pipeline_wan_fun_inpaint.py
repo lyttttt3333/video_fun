@@ -696,7 +696,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
 
                 with torch.cuda.amp.autocast(dtype=weight_dtype), torch.cuda.device(device=device):
                     input_latent = latent_model_input
-                    # [1, 16, 21, 60, 104]
+                    # tensor [1, 16, 21, 60, 104]
                     uncond_prompt = [in_prompt_embeds[0]]
                     # list [126, 4096]
                     cond_prompt = [in_prompt_embeds[1]]
@@ -705,6 +705,8 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     # [1, 20, 21, 60, 104]
                     cond_y = y[1].unsqueeze(0)
                     # [1, 20, 21, 60, 104]
+                    clip_context_input = clip_context_input
+                    # list [257, 1280]
 
                     noise_pred_cond = self.transformer(
                         x=input_latent,
