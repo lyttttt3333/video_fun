@@ -673,7 +673,6 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     )
                     y = torch.cat([mask_input, masked_video_latents_input], dim=1).to(device, weight_dtype) 
 
-                clip_context_fake = (clip_context)
                 clip_context_input = (
                     torch.cat([clip_context] * 2) if do_classifier_free_guidance else clip_context
                 )
@@ -690,6 +689,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 print("seq_len:", seq_len)
                 # [2, 20, 21, 60, 104]
                 print("y shape:", y.shape if hasattr(y, "shape") else y)
+                torch.save(y.clone().cpu(), "y.pt")
                 # len 2 [257, 1280]
                 print("clip_context_input shape:", clip_context_input[0].shape)
 
