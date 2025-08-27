@@ -578,13 +578,13 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             pbar = ProgressBar(num_inference_steps + 2)
 
         # 5. Prepare latents.
-        if video is not None:
-            video_length = video.shape[2]
-            init_video = self.image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
-            init_video = init_video.to(dtype=torch.float32)
-            init_video = rearrange(init_video, "(b f) c h w -> b c f h w", f=video_length)
-        else:
-            init_video = None
+        # if video is not None:
+        video_length = video.shape[2]
+        init_video = self.image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
+        init_video = init_video.to(dtype=torch.float32)
+        init_video = rearrange(init_video, "(b f) c h w -> b c f h w", f=video_length)
+        # else:
+        #     init_video = None
 
         latent_channels = self.vae.config.latent_channels
         latents = self.prepare_latents(
@@ -602,41 +602,43 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             pbar.update(1)
 
         # Prepare mask latent variables
-        if init_video is not None:
-            if (mask_video == 255).all():
-                mask_latents = torch.tile(
-                    torch.zeros_like(latents)[:, :1].to(device, weight_dtype), [1, 4, 1, 1, 1]
-                )
-                masked_video_latents = torch.zeros_like(latents).to(device, weight_dtype)
-            else:
-                bs, _, video_length, height, width = video.size()
-                mask_condition = self.mask_processor.preprocess(rearrange(mask_video, "b c f h w -> (b f) c h w"), height=height, width=width) 
-                mask_condition = mask_condition.to(dtype=torch.float32)
-                mask_condition = rearrange(mask_condition, "(b f) c h w -> b c f h w", f=video_length)
+        # if init_video is not None:
+        if (mask_video == 255).all():
+            print("all 255 mask")
+            mask_latents = torch.tile(
+                torch.zeros_like(latents)[:, :1].to(device, weight_dtype), [1, 4, 1, 1, 1]
+            )
+            masked_video_latents = torch.zeros_like(latents).to(device, weight_dtype)
+        else:
+            print("#################### all 255 mask")
+            bs, _, video_length, height, width = video.size()
+            mask_condition = self.mask_processor.preprocess(rearrange(mask_video, "b c f h w -> (b f) c h w"), height=height, width=width) 
+            mask_condition = mask_condition.to(dtype=torch.float32)
+            mask_condition = rearrange(mask_condition, "(b f) c h w -> b c f h w", f=video_length)
 
-                masked_video = init_video * (torch.tile(mask_condition, [1, 3, 1, 1, 1]) < 0.5)
-                _, masked_video_latents = self.prepare_mask_latents(
-                    None,
-                    masked_video,
-                    batch_size,
-                    height,
-                    width,
-                    weight_dtype,
-                    device,
-                    generator,
-                    do_classifier_free_guidance,
-                    noise_aug_strength=None,
-                )
-                
-                mask_condition = torch.concat(
-                    [
-                        torch.repeat_interleave(mask_condition[:, :, 0:1], repeats=4, dim=2), 
-                        mask_condition[:, :, 1:]
-                    ], dim=2
-                )
-                mask_condition = mask_condition.view(bs, mask_condition.shape[2] // 4, 4, height, width)
-                mask_condition = mask_condition.transpose(1, 2)
-                mask_latents = resize_mask(1 - mask_condition, masked_video_latents, True).to(device, weight_dtype) 
+            masked_video = init_video * (torch.tile(mask_condition, [1, 3, 1, 1, 1]) < 0.5)
+            _, masked_video_latents = self.prepare_mask_latents(
+                None,
+                masked_video,
+                batch_size,
+                height,
+                width,
+                weight_dtype,
+                device,
+                generator,
+                do_classifier_free_guidance,
+                noise_aug_strength=None,
+            )
+            
+            mask_condition = torch.concat(
+                [
+                    torch.repeat_interleave(mask_condition[:, :, 0:1], repeats=4, dim=2), 
+                    mask_condition[:, :, 1:]
+                ], dim=2
+            )
+            mask_condition = mask_condition.view(bs, mask_condition.shape[2] // 4, 4, height, width)
+            mask_condition = mask_condition.transpose(1, 2)
+            mask_latents = resize_mask(1 - mask_condition, masked_video_latents, True).to(device, weight_dtype) 
 
         # Prepare clip latent variables
         if clip_image is not None:
