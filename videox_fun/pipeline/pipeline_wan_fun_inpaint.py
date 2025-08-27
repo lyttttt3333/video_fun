@@ -704,7 +704,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     # [1, 20, 21, 60, 104]
                     cond_y = y[1].unsqueeze(0)
                     # [1, 20, 21, 60, 104]
-                    clip_context_input = clip_context_input
+                    clip_context_input = (clip_context_input[0])
                     # list [257, 1280]
 
                     noise_pred_uncond = self.transformer(
