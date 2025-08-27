@@ -641,12 +641,8 @@ class WanFunInpaintPipeline(DiffusionPipeline):
         # Prepare clip latent variables
         if clip_image is not None:
             clip_image = TF.to_tensor(clip_image).sub_(0.5).div_(0.5).to(device, weight_dtype) 
+            # TODO: get clip image feature
             clip_context = self.clip_image_encoder([clip_image[:, None, :, :]])
-        else:
-            clip_image = Image.new("RGB", (512, 512), color=(0, 0, 0))  
-            clip_image = TF.to_tensor(clip_image).sub_(0.5).div_(0.5).to(device, weight_dtype) 
-            clip_context = self.clip_image_encoder([clip_image[:, None, :, :]])
-            clip_context = torch.zeros_like(clip_context)
         if comfyui_progressbar:
             pbar.update(1)
 
@@ -708,7 +704,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     clip_context_input = clip_context_input
                     # list [257, 1280]
 
-                    noise_pred_cond = self.transformer(
+                    noise_pred_uncond = self.transformer(
                         x=input_latent,
                         context=uncond_prompt,
                         t=t.view(-1),
@@ -716,7 +712,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                         y=uncond_y,
                         clip_fea=clip_context_input,
                     )
-                    noise_pred_uncond = self.transformer(
+                    noise_pred_cond = self.transformer(
                         x=input_latent,
                         context=cond_prompt,
                         t=t.view(-1),
