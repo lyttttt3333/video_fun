@@ -673,7 +673,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     )
                     y = torch.cat([mask_input, masked_video_latents_input], dim=1).to(device, weight_dtype) 
 
-                # clip_context_input = (clip_context)
+                clip_context_fake = (clip_context)
                 clip_context_input = (
                     torch.cat([clip_context] * 2) if do_classifier_free_guidance else clip_context
                 )
@@ -704,7 +704,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                     # [1, 20, 21, 60, 104]
                     cond_y = y[1].unsqueeze(0)
                     # [1, 20, 21, 60, 104]
-                    clip_context_input = (clip_context_input[0])
+                    clip_context = clip_context_fake
                     # list [257, 1280]
 
                     noise_pred_uncond = self.transformer(
@@ -713,7 +713,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                         t=t.view(-1),
                         seq_len=seq_len,
                         y=uncond_y,
-                        clip_fea=clip_context_input,
+                        clip_fea=clip_context,
                     )
                     noise_pred_cond = self.transformer(
                         x=input_latent,
@@ -721,7 +721,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                         t=t.view(-1),
                         seq_len=seq_len,
                         y=cond_y,
-                        clip_fea=clip_context_input,
+                        clip_fea=clip_context,
                     )
                 # [2, 16, 21, 60, 104] 6.0
                 # print("############### noise_pred shape:", noise_pred_cond.shape, self.guidance_scale)
