@@ -338,41 +338,6 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             latents = latents * self.scheduler.init_noise_sigma
         return latents
 
-    def prepare_mask_latents(
-        self, mask, masked_image, batch_size, height, width, dtype, device, generator, do_classifier_free_guidance, noise_aug_strength
-    ):
-        # resize the mask to latents shape as we concatenate the mask to the latents
-        # we do that before converting to dtype to avoid breaking in case we're using cpu_offload
-        # and half precision
-
-        if mask is not None:
-            mask = mask.to(device=device, dtype=self.vae.dtype)
-            bs = 1
-            new_mask = []
-            for i in range(0, mask.shape[0], bs):
-                mask_bs = mask[i : i + bs]
-                mask_bs = self.vae.encode(mask_bs)[0]
-                mask_bs = mask_bs.mode()
-                new_mask.append(mask_bs)
-            mask = torch.cat(new_mask, dim = 0)
-            # mask = mask * self.vae.config.scaling_factor
-
-        if masked_image is not None:
-            masked_image = masked_image.to(device=device, dtype=self.vae.dtype)
-            bs = 1
-            new_mask_pixel_values = []
-            for i in range(0, masked_image.shape[0], bs):
-                mask_pixel_values_bs = masked_image[i : i + bs]
-                mask_pixel_values_bs = self.vae.encode(mask_pixel_values_bs)[0]
-                mask_pixel_values_bs = mask_pixel_values_bs.mode()
-                new_mask_pixel_values.append(mask_pixel_values_bs)
-            masked_image_latents = torch.cat(new_mask_pixel_values, dim = 0)
-            # masked_image_latents = masked_image_latents * self.vae.config.scaling_factor
-        else:
-            masked_image_latents = None
-
-        return mask, masked_image_latents
-
     def decode_latents(self, latents: torch.Tensor) -> torch.Tensor:
         frames = self.vae.decode(latents.to(self.vae.dtype)).sample
         frames = (frames / 2 + 0.5).clamp(0, 1)
@@ -577,14 +542,6 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             from comfy.utils import ProgressBar
             pbar = ProgressBar(num_inference_steps + 2)
 
-        # 5. Prepare latents.
-        # if video is not None:
-        video_length = video.shape[2]
-        init_video = self.image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
-        init_video = init_video.to(dtype=torch.float32)
-        init_video = rearrange(init_video, "(b f) c h w -> b c f h w", f=video_length)
-        # else:
-        #     init_video = None
 
         latent_channels = self.vae.config.latent_channels
         latents = self.prepare_latents(
@@ -601,44 +558,23 @@ class WanFunInpaintPipeline(DiffusionPipeline):
         if comfyui_progressbar:
             pbar.update(1)
 
+        # 5. Prepare latents.
+        # if video is not None:
+
+        # else:
+        #     init_video = None
+
+
+
         # Prepare mask latent variables
         # if init_video is not None:
-        if (mask_video == 255).all():
-            print("all 255 mask")
-            mask_latents = torch.tile(
-                torch.zeros_like(latents)[:, :1].to(device, weight_dtype), [1, 4, 1, 1, 1]
-            )
-            masked_video_latents = torch.zeros_like(latents).to(device, weight_dtype)
-        else:
-            print("#################### all 255 mask")
-            bs, _, video_length, height, width = video.size()
-            mask_condition = self.mask_processor.preprocess(rearrange(mask_video, "b c f h w -> (b f) c h w"), height=height, width=width) 
-            mask_condition = mask_condition.to(dtype=torch.float32)
-            mask_condition = rearrange(mask_condition, "(b f) c h w -> b c f h w", f=video_length)
-
-            masked_video = init_video * (torch.tile(mask_condition, [1, 3, 1, 1, 1]) < 0.5)
-            _, masked_video_latents = self.prepare_mask_latents(
-                None,
-                masked_video,
-                batch_size,
-                height,
-                width,
-                weight_dtype,
-                device,
-                generator,
-                do_classifier_free_guidance,
-                noise_aug_strength=None,
-            )
-            
-            mask_condition = torch.concat(
-                [
-                    torch.repeat_interleave(mask_condition[:, :, 0:1], repeats=4, dim=2), 
-                    mask_condition[:, :, 1:]
-                ], dim=2
-            )
-            mask_condition = mask_condition.view(bs, mask_condition.shape[2] // 4, 4, height, width)
-            mask_condition = mask_condition.transpose(1, 2)
-            mask_latents = resize_mask(1 - mask_condition, masked_video_latents, True).to(device, weight_dtype) 
+        # if (mask_video == 255).all():
+        #     print("all 255 mask")
+        #     mask_latents = torch.tile(
+        #         torch.zeros_like(latents)[:, :1].to(device, weight_dtype), [1, 4, 1, 1, 1]
+        #     )
+        #     masked_video_latents = torch.zeros_like(latents).to(device, weight_dtype)
+        # else:
 
         # Prepare clip latent variables
         if clip_image is not None:
@@ -647,6 +583,10 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             clip_context = self.clip_image_encoder([clip_image[:, None, :, :]])
         if comfyui_progressbar:
             pbar.update(1)
+
+        init_video, mask_latents, masked_video_latents = prepare_mask(
+            video, mask_video, self.image_processor, self.mask_processor, device
+        )
 
         # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
@@ -788,3 +728,50 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             video = torch.from_numpy(video)
 
         return WanPipelineOutput(videos=video)
+    
+def prepare_mask(video, mask_video, image_processor, mask_processor, device):
+    video_length = video.shape[2]
+    init_video = image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
+    init_video = init_video.to(dtype=torch.float32)
+    init_video = rearrange(init_video, "(b f) c h w -> b c f h w", f=video_length)
+    bs, _, video_length, height, width = video.size()
+    mask_condition = mask_processor.preprocess(rearrange(mask_video, "b c f h w -> (b f) c h w"), height=height, width=width) 
+    mask_condition = mask_condition.to(dtype=torch.float32)
+    mask_condition = rearrange(mask_condition, "(b f) c h w -> b c f h w", f=video_length)
+
+    masked_video = init_video * (torch.tile(mask_condition, [1, 3, 1, 1, 1]) < 0.5)
+    masked_video_latents = prepare_mask_latents(
+        masked_video,
+        device
+    )
+    
+    mask_condition = torch.concat(
+        [
+            torch.repeat_interleave(mask_condition[:, :, 0:1], repeats=4, dim=2), 
+            mask_condition[:, :, 1:]
+        ], dim=2
+    )
+    mask_condition = mask_condition.view(bs, mask_condition.shape[2] // 4, 4, height, width)
+    mask_condition = mask_condition.transpose(1, 2)
+    mask_latents = resize_mask(1 - mask_condition, masked_video_latents, True).to(device) 
+    return init_video, mask_latents, masked_video_latents
+
+
+def prepare_mask_latents(
+    self, masked_image, device
+):
+    # resize the mask to latents shape as we concatenate the mask to the latents
+    # we do that before converting to dtype to avoid breaking in case we're using cpu_offload
+    # and half precision
+
+    masked_image = masked_image.to(device=device, dtype=self.vae.dtype)
+    bs = 1
+    new_mask_pixel_values = []
+    for i in range(0, masked_image.shape[0], bs):
+        mask_pixel_values_bs = masked_image[i : i + bs]
+        mask_pixel_values_bs = self.vae.encode(mask_pixel_values_bs)[0]
+        mask_pixel_values_bs = mask_pixel_values_bs.mode()
+        new_mask_pixel_values.append(mask_pixel_values_bs)
+    masked_image_latents = torch.cat(new_mask_pixel_values, dim = 0)
+
+    return masked_image_latents
