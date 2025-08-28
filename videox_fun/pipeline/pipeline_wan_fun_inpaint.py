@@ -730,11 +730,11 @@ class WanFunInpaintPipeline(DiffusionPipeline):
         return WanPipelineOutput(videos=video)
     
 def prepare_mask(video, mask_video, image_processor, mask_processor, device):
-    video_length = video.shape[2]
+    bs, _, video_length, height, width = video.size()
     init_video = image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
     init_video = init_video.to(dtype=torch.float32)
     init_video = rearrange(init_video, "(b f) c h w -> b c f h w", f=video_length)
-    bs, _, video_length, height, width = video.size()
+    
     mask_condition = mask_processor.preprocess(rearrange(mask_video, "b c f h w -> (b f) c h w"), height=height, width=width) 
     mask_condition = mask_condition.to(dtype=torch.float32)
     mask_condition = rearrange(mask_condition, "(b f) c h w -> b c f h w", f=video_length)
