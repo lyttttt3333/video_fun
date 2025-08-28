@@ -622,19 +622,17 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0])
                 
-                # predict noise model_output
-                # 2， 16， 21， 60， 104
-                print("latent_model_input shape:", latent_model_input.shape)
-                # len 2 [126, 4096]
-                print("in_prompt_embeds shape:", len(in_prompt_embeds),in_prompt_embeds[0].shape)
-                # [2]
-                print("seq_len:", seq_len)
-                # [2, 20, 21, 60, 104]
-                print("y shape:", y.shape if hasattr(y, "shape") else y)
-                torch.save(y.clone().cpu(), "y.pt")
-                assert 0
-                # len 2 [257, 1280]
-                print("clip_context_input shape:", clip_context_input[0].shape)
+                # # predict noise model_output
+                # # 2， 16， 21， 60， 104
+                # print("latent_model_input shape:", latent_model_input.shape)
+                # # len 2 [126, 4096]
+                # print("in_prompt_embeds shape:", len(in_prompt_embeds),in_prompt_embeds[0].shape)
+                # # [2]
+                # print("seq_len:", seq_len)
+                # # [2, 20, 21, 60, 104]
+                # print("y shape:", y.shape if hasattr(y, "shape") else y)
+                # # len 2 [257, 1280]
+                # print("clip_context_input shape:", clip_context_input[0].shape)
 
                 # print("############## clip context", torch.allclose(y[0], y[1], atol=1e-4))
 
@@ -691,9 +689,6 @@ class WanFunInpaintPipeline(DiffusionPipeline):
                 if do_classifier_free_guidance:
                     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
                     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
-
-                print("############### noise cond", torch.allclose(noise_pred_text, noise_pred_cond, atol=1e-4))
-                print("############### noise all", torch.allclose(noise_pred, noise_pred_fake, atol=1e-4))
 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
