@@ -585,7 +585,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
             pbar.update(1)
 
         init_video, mask_latents, masked_video_latents = prepare_mask(
-            video, mask_video, self.image_processor, self.mask_processor, device
+            video, mask_video, self.image_processor, self.mask_processor, device, self.vae
         )
 
         # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
@@ -729,7 +729,7 @@ class WanFunInpaintPipeline(DiffusionPipeline):
 
         return WanPipelineOutput(videos=video)
     
-def prepare_mask(video, mask_video, image_processor, mask_processor, device):
+def prepare_mask(video, mask_video, image_processor, mask_processor, device, vae):
     bs, _, video_length, height, width = video.size()
     init_video = image_processor.preprocess(rearrange(video, "b c f h w -> (b f) c h w"), height=height, width=width) 
     init_video = init_video.to(dtype=torch.float32)
@@ -742,7 +742,8 @@ def prepare_mask(video, mask_video, image_processor, mask_processor, device):
     masked_video = init_video * (torch.tile(mask_condition, [1, 3, 1, 1, 1]) < 0.5)
     masked_video_latents = prepare_mask_latents(
         masked_video,
-        device
+        device,
+        vae
     )
     
     mask_condition = torch.concat(
@@ -757,19 +758,17 @@ def prepare_mask(video, mask_video, image_processor, mask_processor, device):
     return init_video, mask_latents, masked_video_latents
 
 
-def prepare_mask_latents(
-    self, masked_image, device
-):
+def prepare_mask_latents(masked_image, device, vae):
     # resize the mask to latents shape as we concatenate the mask to the latents
     # we do that before converting to dtype to avoid breaking in case we're using cpu_offload
     # and half precision
 
-    masked_image = masked_image.to(device=device, dtype=self.vae.dtype)
+    masked_image = masked_image.to(device=device, dtype=vae.dtype)
     bs = 1
     new_mask_pixel_values = []
     for i in range(0, masked_image.shape[0], bs):
         mask_pixel_values_bs = masked_image[i : i + bs]
-        mask_pixel_values_bs = self.vae.encode(mask_pixel_values_bs)[0]
+        mask_pixel_values_bs = vae.encode(mask_pixel_values_bs)[0]
         mask_pixel_values_bs = mask_pixel_values_bs.mode()
         new_mask_pixel_values.append(mask_pixel_values_bs)
     masked_image_latents = torch.cat(new_mask_pixel_values, dim = 0)
